@@ -3,1025 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام مراقبة صحة المريض الذكي</title>
+    <title>نظام التتبع الذكي 🛰️</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700&family=Share+Tech+Mono&display=swap">
+    
     <style>
-        :root {
-            --bg-color: #0a0a0a;
-            --panel-bg: rgba(25, 25, 35, 0.95);
-            --primary-blue: #00b4ff;
-            --primary-green: #00ff9d;
-            --primary-red: #ff3366;
-            --primary-yellow: #ffcc00;
-            --dim-blue: rgba(0, 180, 255, 0.2);
-            --dim-green: rgba(0, 255, 157, 0.2);
-            --dim-red: rgba(255, 51, 102, 0.2);
-            --text-main: #f0f0f0;
-            --text-muted: #aaa;
-            --grid-line: #1a1a1a;
-            --font-main: 'Cairo', sans-serif;
-            --font-mono: 'Share Tech Mono', monospace;
-            --success: #00cc66;
-            --warning: #ff9900;
-            --danger: #ff3333;
-            --border-radius: 16px;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: var(--font-main);
-            overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(0, 180, 255, 0.05) 0%, transparent 20%),
-                radial-gradient(circle at 85% 30%, rgba(0, 255, 157, 0.05) 0%, transparent 20%),
-                linear-gradient(var(--grid-line) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
-            background-position: center center, center center, center 0, center 0;
-            min-height: 100vh;
-        }
-
-        .app-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-        }
-
-        /* Header */
-        .main-header {
-            padding: 20px;
-            border-radius: var(--border-radius);
-            background: linear-gradient(135deg, rgba(10, 15, 30, 0.9) 0%, rgba(20, 25, 45, 0.9) 100%);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 180, 255, 0.3);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .main-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary-blue), var(--primary-green), var(--primary-red));
-            z-index: 1;
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .title-group {
-            text-align: right;
-            flex: 1;
-        }
-
-        .glow-text {
-            font-size: 2.8rem;
-            background: linear-gradient(90deg, var(--primary-blue), var(--primary-green));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            text-shadow: 0 0 20px rgba(0, 180, 255, 0.3);
-            margin-bottom: 10px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-
-        .subtitle {
-            color: var(--text-muted);
-            font-family: var(--font-mono);
-            letter-spacing: 3px;
-            font-size: 0.9rem;
-            position: relative;
-            padding-right: 15px;
-        }
-
-        .subtitle::before {
-            content: '>';
-            position: absolute;
-            right: 0;
-            top: 0;
-            color: var(--primary-blue);
-        }
-
-        /* ESP32 Status */
-        .esp-status-corner {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: rgba(15, 20, 35, 0.9);
-            padding: 12px 20px;
-            border-radius: 12px;
-            border: 1px solid rgba(0, 180, 255, 0.5);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            position: relative;
-            overflow: hidden;
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #map { height: 60vh; width: 100%; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: 2px solid #fff; }
+        
+        .card-custom {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             transition: all 0.3s ease;
+            color: white; /* النص أبيض دائماً للقراءة */
         }
+        
+        /* ألوان الحالات */
+        .status-gps { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); } /* أخضر متدرج */
+        .status-wifi { background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); } /* أزرق متدرج */
+        .status-tower { background: linear-gradient(135deg, #fce38a 0%, #f38181 100%); color: #333 !important; } /* برتقالي */
+        .status-unknown { background-color: #6c757d; }
 
-        .esp-status-corner:hover {
-            border-color: var(--primary-green);
-            transform: translateY(-2px);
-        }
-
-        .esp-label {
-            font-family: var(--font-mono);
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            letter-spacing: 1px;
-        }
-
-        .esp-dot {
-            width: 14px;
-            height: 14px;
-            background-color: #333;
-            border-radius: 50%;
-            position: relative;
-            transition: all 0.3s ease;
-        }
-
-        .esp-dot.active {
-            background-color: var(--success);
-            box-shadow: 0 0 12px var(--success);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(0, 204, 102, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(0, 204, 102, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 204, 102, 0); }
-        }
-
-        .esp-text {
-            font-size: 0.9rem;
-            color: var(--text-main);
-            font-weight: 600;
-        }
-
-        /* Dashboard */
-        .dashboard {
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-        }
-
-        /* ECG Section */
-        .ecg-section {
-            background: var(--panel-bg);
-            border-radius: var(--border-radius);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 180, 255, 0.2);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .ecg-section:hover {
-            border-color: rgba(0, 180, 255, 0.5);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 25px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .panel-header h2 {
-            font-size: 1.5rem;
-            color: var(--primary-blue);
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .panel-header h2 i {
-            font-size: 1.2rem;
-        }
-
-        .status-indicator {
-            font-size: 0.85rem;
-            padding: 6px 15px;
-            border-radius: 20px;
-            background: rgba(0, 255, 157, 0.1);
-            color: var(--primary-green);
-            border: 1px solid rgba(0, 255, 157, 0.3);
-            font-weight: 600;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .status-indicator i {
-            font-size: 0.7rem;
-        }
-
-        .ecg-display {
-            width: 100%;
-            height: 350px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .ecg-display::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: 
-                linear-gradient(rgba(0, 180, 255, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 180, 255, 0.05) 1px, transparent 1px);
-            background-size: 50px 50px;
-            z-index: 1;
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-            position: relative;
-        }
-
-        /* Sensors Grid */
-        .sensors-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
-        }
-
-        .sensor-card {
-            background: var(--panel-bg);
-            border-radius: var(--border-radius);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-            padding: 25px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .sensor-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(0, 180, 255, 0.5);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-        }
-
-        .sensor-card.active {
-            border-left: 5px solid var(--primary-green);
-        }
-
-        .sensor-card.warning {
-            border-left: 5px solid var(--warning);
-        }
-
-        .sensor-card.danger {
-            border-left: 5px solid var(--danger);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        .card-header h3 {
-            font-family: var(--font-mono);
-            font-size: 1.2rem;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card-header h3 i {
-            color: var(--primary-blue);
-            font-size: 1.1rem;
-        }
-
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: #333;
-            position: relative;
-        }
-
-        .active .status-dot {
-            background-color: var(--success);
-            box-shadow: 0 0 10px var(--success);
-            animation: blink 3s infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .readings {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .reading-group {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .label {
-            font-size: 1rem;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .value {
-            font-family: var(--font-mono);
-            font-size: 2.8rem;
-            font-weight: 700;
-            color: var(--text-main);
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
-            position: relative;
-        }
-
-        .unit {
-            font-size: 1.2rem;
-            color: var(--primary-blue);
-            margin-right: 5px;
-            font-weight: 600;
-        }
-
-        .sub-status {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
-
-        .text-small {
-            font-size: 1.3rem;
-            font-weight: 700;
-        }
-
-        /* Footer */
-        footer {
-            margin-top: auto;
+        .icon-large { font-size: 2.5rem; margin-bottom: 10px; }
+        
+        /* أيقونات الخريطة المخصصة */
+        .map-icon {
             text-align: center;
-            padding: 25px 20px;
-            font-family: var(--font-mono);
-            color: var(--text-muted);
-            background: rgba(10, 15, 30, 0.8);
-            border-radius: var(--border-radius);
-            border: 1px solid rgba(0, 180, 255, 0.2);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .system-status {
-            font-size: 1.1rem;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .blink {
-            animation: blinker 2s ease-in-out infinite;
-            color: var(--primary-green);
-            font-weight: 700;
-            letter-spacing: 2px;
-        }
-
-        @keyframes blinker {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1200px) {
-            .sensors-grid {
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            }
-        }
-
-        @media (max-width: 768px) {
-            .app-container {
-                padding: 15px;
-            }
-            
-            .glow-text {
-                font-size: 2rem;
-            }
-            
-            .header-content {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .esp-status-corner {
-                align-self: flex-start;
-            }
-            
-            .sensors-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .value {
-                font-size: 2.2rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .glow-text {
-                font-size: 1.8rem;
-            }
-            
-            .panel-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .ecg-display {
-                height: 250px;
-            }
-        }
-
-        /* Additional Styling */
-        .data-timestamp {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            text-align: left;
-            margin-top: 5px;
-            font-family: var(--font-mono);
-        }
-
-        .sensor-icon {
-            width: 40px;
-            height: 40px;
+            line-height: 40px;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 180, 255, 0.1);
-            color: var(--primary-blue);
-            margin-bottom: 15px;
+            color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            font-size: 20px;
         }
-
-        .health-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-top: 10px;
-            width: fit-content;
-        }
-
-        .status-normal {
-            background: rgba(0, 255, 157, 0.1);
-            color: var(--primary-green);
-            border: 1px solid rgba(0, 255, 157, 0.3);
-        }
-
-        .status-warning {
-            background: rgba(255, 153, 0, 0.1);
-            color: var(--warning);
-            border: 1px solid rgba(255, 153, 0, 0.3);
-        }
-
-        .status-critical {
-            background: rgba(255, 51, 51, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(255, 51, 51, 0.3);
-        }
+        .marker-gps { background-color: #28a745; border: 2px solid white; }
+        .marker-wifi { background-color: #17a2b8; border: 2px solid white; }
+        .marker-tower { background-color: #ffc107; color: black; border: 2px solid white; }
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <header class="main-header">
-            <div class="header-content">
-                <div class="title-group">
-                    <h1 class="glow-text"><i class="fas fa-heartbeat"></i> نظام مراقبة المريض الذكي</h1>
-                    <p class="subtitle">مشروع التخرج: نظام مراقبة المؤشرات الحيوية في الوقت الحقيقي</p>
-                </div>
-                <div class="esp-status-corner">
-                    <span class="esp-label">ESP32</span>
-                    <span class="esp-dot active"></span>
-                    <span class="esp-text">متصل - قوة الإشارة: -42dBm</span>
-                </div>
-            </div>
-        </header>
 
-        <main class="dashboard">
-            <!-- ECG Section -->
-            <section class="ecg-section panel">
-                <div class="panel-header">
-                    <h2><i class="fas fa-wave-square"></i> مخطط القلب الكهربائي (ECG) - AD8232</h2>
-                    <span class="status-indicator"><i class="fas fa-circle"></i> نشط وجاري البث</span>
-                </div>
-                <div class="ecg-display">
-                    <canvas id="ecgCanvas"></canvas>
-                </div>
-                <div class="data-timestamp" id="ecg-timestamp">آخر تحديث: <span id="ecg-time">--:--:--</span></div>
-            </section>
-
-            <!-- Sensors Grid -->
-            <div class="sensors-grid">
-                <!-- MAX30102: Pulse & SpO2 -->
-                <div class="sensor-card panel active" id="sensor-max30102">
-                    <div class="card-header">
-                        <h3><i class="fas fa-heart"></i> MAX30102 - مؤشرات الحيوية</h3>
-                        <span class="status-dot"></span>
-                    </div>
-                    <div class="sensor-icon">
-                        <i class="fas fa-heartbeat fa-lg"></i>
-                    </div>
-                    <div class="readings">
-                        <div class="reading-group">
-                            <span class="label"><i class="fas fa-tachometer-alt"></i> معدل ضربات القلب</span>
-                            <div>
-                                <span class="value" id="bpm-val">72</span>
-                                <span class="unit">BPM</span>
-                            </div>
-                        </div>
-                        <div class="reading-group">
-                            <span class="label"><i class="fas fa-wind"></i> تشبع الأكسجين</span>
-                            <div>
-                                <span class="value" id="spo2-val">98</span>
-                                <span class="unit">%</span>
-                            </div>
-                        </div>
-                        <div class="reading-group sub-status">
-                            <span class="label"><i class="fas fa-chart-line"></i> حالة المؤشر</span>
-                            <span class="health-status status-normal" id="pulse-status">طبيعي</span>
-                        </div>
-                    </div>
-                    <div class="data-timestamp">آخر قراءة: <span id="max30102-time">--:--:--</span></div>
-                </div>
-
-                <!-- MAX31865: Temperature -->
-                <div class="sensor-card panel active" id="sensor-max31865">
-                    <div class="card-header">
-                        <h3><i class="fas fa-thermometer-half"></i> MAX31865 - حساس الحرارة</h3>
-                        <span class="status-dot"></span>
-                    </div>
-                    <div class="sensor-icon">
-                        <i class="fas fa-temperature-high fa-lg"></i>
-                    </div>
-                    <div class="readings">
-                        <div class="reading-group">
-                            <span class="label"><i class="fas fa-thermometer"></i> درجة حرارة الجسم</span>
-                            <div>
-                                <span class="value" id="temp-val">36.6</span>
-                                <span class="unit">°C</span>
-                            </div>
-                        </div>
-                        <div class="reading-group sub-status">
-                            <span class="label"><i class="fas fa-exclamation-triangle"></i> حالة الحرارة</span>
-                            <span class="health-status status-normal" id="temp-status">طبيعي</span>
-                        </div>
-                    </div>
-                    <div class="data-timestamp">آخر قراءة: <span id="max31865-time">--:--:--</span></div>
-                </div>
-
-                <!-- HX710B: Pressure (Using DC Motor context) -->
-                <div class="sensor-card panel active" id="sensor-hx710b">
-                    <div class="card-header">
-                        <h3><i class="fas fa-tachometer-alt"></i> HX710B + محرك تيار مستمر</h3>
-                        <span class="status-dot"></span>
-                    </div>
-                    <div class="sensor-icon">
-                        <i class="fas fa-lungs fa-lg"></i>
-                    </div>
-                    <div class="readings">
-                        <div class="reading-group">
-                            <span class="label"><i class="fas fa-compress-alt"></i> ضغط الكفة</span>
-                            <div>
-                                <span class="value" id="pressure-val">120</span>
-                                <span class="unit">mmHg</span>
-                            </div>
-                        </div>
-                        <div class="reading-group sub-status">
-                            <span class="label"><i class="fas fa-heartbeat"></i> نتيجة ضغط الدم</span>
-                            <span class="value text-small" id="bp-result">120/80</span>
-                        </div>
-                        <div class="reading-group sub-status">
-                            <span class="label"><i class="fas fa-cogs"></i> حالة الدورة</span>
-                            <span class="value text-small" id="motor-status">متوقف</span>
-                        </div>
-                        <div class="reading-group sub-status">
-                            <span class="label"><i class="fas fa-stethoscope"></i> حالة الضغط</span>
-                            <span class="health-status status-normal" id="pressure-status">طبيعي</span>
-                        </div>
-                    </div>
-                    <div class="data-timestamp">آخر قراءة: <span id="hx710b-time">--:--:--</span></div>
-                </div>
-            </div>
-        </main>
-
-        <footer>
-            <div class="system-status">
-                <i class="fas fa-server"></i>
-                حالة النظام: <span class="blink">ONLINE</span>
-                <span style="margin: 0 15px">|</span>
-                <i class="fas fa-clock"></i>
-                وقت التشغيل: <span id="uptime">00:00:00</span>
-                <span style="margin: 0 15px">|</span>
-                <i class="fas fa-database"></i>
-                آخر تحديث: <span id="last-update">--:--:--</span>
-            </div>
-        </footer>
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark"><i class="fas fa-map-location-dot text-primary"></i> تتبع المركبة المباشر</h2>
+        <span class="badge bg-secondary p-2" id="connectionStatus">جاري الاتصال...</span>
     </div>
 
-    <script>
-        // نظام مراقبة صحة المريض - إصدار محسّن
-        document.addEventListener('DOMContentLoaded', function() {
-            // تعريف الكائنات الرئيسية
-            const system = {
-                startTime: Date.now(),
-                lastUpdate: Date.now(),
-                updateInterval: 1000, // تحديث كل ثانية
-                dataHistory: {
-                    bpm: [],
-                    spo2: [],
-                    temp: [],
-                    pressure: []
-                },
-                maxHistoryLength: 60 // تخزين آخر 60 قراءة (دقيقة واحدة)
-            };
+    <div class="row mb-4">
+        <div class="col-12">
+            <div id="mainCard" class="card card-custom p-4 status-unknown">
+                <div class="row align-items-center">
+                    <div class="col-md-2 text-center">
+                        <i id="mainIcon" class="fas fa-satellite-dish icon-large"></i>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-uppercase opacity-75">مصدر الموقع الحالي</h6>
+                        <h2 id="sourceType" class="fw-bold mb-0">--</h2>
+                        <small id="lastUpdate" class="d-block mt-2">انتظار البيانات...</small>
+                    </div>
+                    <div class="col-md-4 text-center border-start border-light">
+                        <h6 class="text-uppercase opacity-75">دقة التحديد</h6>
+                        <h1 id="accuracy" class="fw-bold display-5">--</h1>
+                        <span>متر</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            // بيانات المستشعرات
-            const sensors = {
-                max30102: {
-                    id: 'max30102',
-                    name: 'MAX30102',
-                    connected: true,
-                    icon: 'fas fa-heartbeat',
-                    data: {
-                        bpm: 72,
-                        spo2: 98,
-                        lastUpdate: Date.now()
-                    },
-                    thresholds: {
-                        bpm: { min: 60, max: 100 },
-                        spo2: { min: 95, max: 100 }
-                    }
-                },
-                max31865: {
-                    id: 'max31865',
-                    name: 'MAX31865',
-                    connected: true,
-                    icon: 'fas fa-thermometer-half',
-                    data: {
-                        temp: 36.6,
-                        lastUpdate: Date.now()
-                    },
-                    thresholds: {
-                        temp: { min: 36.0, max: 37.5 }
-                    }
-                },
-                hx710b: {
-                    id: 'hx710b',
-                    name: 'HX710B',
-                    connected: true,
-                    icon: 'fas fa-tachometer-alt',
-                    data: {
-                        pressure: 120,
-                        systolic: 120,
-                        diastolic: 80,
-                        motor: 'IDLE',
-                        lastUpdate: Date.now()
-                    },
-                    thresholds: {
-                        systolic: { min: 90, max: 140 },
-                        diastolic: { min: 60, max: 90 }
-                    }
-                }
-            };
+    <div class="row">
+        <div class="col-12">
+            <div id="map"></div>
+        </div>
+    </div>
+    
+    <div class="d-grid gap-2 mt-3">
+        <a id="googleLink" href="#" target="_blank" class="btn btn-dark btn-lg">
+            <i class="fas fa-external-link-alt"></i> فتح في Google Maps
+        </a>
+    </div>
+</div>
 
-            // تحديث الوقت
-            function updateTimestamps() {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString('ar-EG');
-                
-                // تحديث الوقت في الأقسام
-                document.getElementById('last-update').textContent = timeString;
-                
-                // تحديث وقت التشغيل
-                const uptimeMs = Date.now() - system.startTime;
-                const hours = Math.floor(uptimeMs / 3600000).toString().padStart(2, '0');
-                const minutes = Math.floor((uptimeMs % 3600000) / 60000).toString().padStart(2, '0');
-                const seconds = Math.floor((uptimeMs % 60000) / 1000).toString().padStart(2, '0');
-                document.getElementById('uptime').textContent = `${hours}:${minutes}:${seconds}`;
-            }
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    // 🛑🛑 ضع رابط الفايربيس الخاص بك هنا 🛑🛑
+    const firebaseURL = "https://gps-tracker-534ae-default-rtdb.firebaseio.com/gps.json";
 
-            // تحديث بيانات المستشعرات
-            function updateSensors() {
-                const now = Date.now();
-                const timeString = new Date(now).toLocaleTimeString('ar-EG');
-                
-                // 1. تحديث بيانات MAX30102 (نبض وتشبع أكسجين)
-                if (sensors.max30102.connected) {
-                    // محاكاة تغيرات واقعية مع اتجاه معين
-                    const bpmChange = (Math.random() - 0.5) * 3;
-                    sensors.max30102.data.bpm = Math.max(55, Math.min(110, sensors.max30102.data.bpm + bpmChange));
-                    
-                    const spo2Change = (Math.random() - 0.5) * 0.5;
-                    sensors.max30102.data.spo2 = Math.max(94, Math.min(100, sensors.max30102.data.spo2 + spo2Change));
-                    
-                    sensors.max30102.data.lastUpdate = now;
-                    
-                    // تحديث الواجهة
-                    document.getElementById('bpm-val').textContent = Math.round(sensors.max30102.data.bpm);
-                    document.getElementById('spo2-val').textContent = sensors.max30102.data.spo2.toFixed(1);
-                    document.getElementById('max30102-time').textContent = timeString;
-                    
-                    // تحديث حالة المؤشر
-                    updateHealthStatus('pulse-status', sensors.max30102.data.bpm, sensors.max30102.thresholds.bpm);
-                    
-                    // تخزين في السجل
-                    system.dataHistory.bpm.push(sensors.max30102.data.bpm);
-                    system.dataHistory.spo2.push(sensors.max30102.data.spo2);
-                }
-                
-                // 2. تحديث بيانات MAX31865 (درجة الحرارة)
-                if (sensors.max31865.connected) {
-                    // محاكاة تغيرات واقعية في درجة الحرارة
-                    const tempChange = (Math.random() - 0.5) * 0.1;
-                    sensors.max31865.data.temp = Math.max(35.5, Math.min(38.5, sensors.max31865.data.temp + tempChange));
-                    
-                    sensors.max31865.data.lastUpdate = now;
-                    
-                    // تحديث الواجهة
-                    document.getElementById('temp-val').textContent = sensors.max31865.data.temp.toFixed(1);
-                    document.getElementById('max31865-time').textContent = timeString;
-                    
-                    // تحديث حالة المؤشر
-                    updateHealthStatus('temp-status', sensors.max31865.data.temp, sensors.max31865.thresholds.temp);
-                    
-                    // تخزين في السجل
-                    system.dataHistory.temp.push(sensors.max31865.data.temp);
-                }
-                
-                // 3. تحديث بيانات HX710B (ضغط الدم)
-                if (sensors.hx710b.connected) {
-                    // محاكاة دورة قياس ضغط الدم
-                    if (sensors.hx710b.data.motor === 'PUMPING') {
-                        sensors.hx710b.data.pressure += 5;
-                        if (sensors.hx710b.data.pressure > 180) {
-                            sensors.hx710b.data.motor = 'RELEASING';
-                        }
-                    } else if (sensors.hx710b.data.motor === 'RELEASING') {
-                        sensors.hx710b.data.pressure -= 2;
-                        if (sensors.hx710b.data.pressure < 60) {
-                            sensors.hx710b.data.motor = 'IDLE';
-                            // توليد قراءة ضغط دم عشوائية واقعية
-                            sensors.hx710b.data.systolic = Math.floor(Math.random() * (135 - 115 + 1) + 115);
-                            sensors.hx710b.data.diastolic = Math.floor(Math.random() * (85 - 70 + 1) + 70);
-                        }
-                    } else {
-                        // IDLE state - occasionally start a new measurement
-                        if (Math.random() < 0.05) { // 5% chance to start measurement
-                            sensors.hx710b.data.motor = 'PUMPING';
-                            sensors.hx710b.data.pressure = 60;
-                        }
-                    }
-                    
-                    sensors.hx710b.data.lastUpdate = now;
-                    
-                    // تحديث الواجهة
-                    document.getElementById('pressure-val').textContent = Math.round(sensors.hx710b.data.pressure);
-                    document.getElementById('bp-result').textContent = 
-                        `${sensors.hx710b.data.systolic}/${sensors.hx710b.data.diastolic}`;
-                    
-                    const motorStatusText = sensors.hx710b.data.motor === 'PUMPING' ? 'ضخ' :
-                                          sensors.hx710b.data.motor === 'RELEASING' ? 'تحرير' : 'متوقف';
-                    document.getElementById('motor-status').textContent = motorStatusText;
-                    
-                    // تلوين حالة المحرك
-                    const motorStatusEl = document.getElementById('motor-status');
-                    if (sensors.hx710b.data.motor === 'PUMPING') {
-                        motorStatusEl.style.color = 'var(--warning)';
-                    } else if (sensors.hx710b.data.motor === 'RELEASING') {
-                        motorStatusEl.style.color = 'var(--primary-green)';
-                    } else {
-                        motorStatusEl.style.color = 'var(--text-muted)';
-                    }
-                    
-                    document.getElementById('hx710b-time').textContent = timeString;
-                    
-                    // تحديث حالة المؤشر (بناءً على قراءة ضغط الدم الأخيرة)
-                    const avgBP = (sensors.hx710b.data.systolic + sensors.hx710b.data.diastolic) / 2;
-                    updateHealthStatus('pressure-status', avgBP, { min: 75, max: 115 });
-                    
-                    // تخزين في السجل
-                    system.dataHistory.pressure.push(sensors.hx710b.data.pressure);
-                }
-                
-                // تقليص السجل إذا تجاوز الحد الأقصى
-                Object.keys(system.dataHistory).forEach(key => {
-                    if (system.dataHistory[key].length > system.maxHistoryLength) {
-                        system.dataHistory[key].shift();
-                    }
-                });
-                
-                // تحديث وقت النظام
-                system.lastUpdate = now;
-            }
+    // إعداد الخريطة
+    var map = L.map('map').setView([33.3152, 44.3661], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
 
-            // تحديث حالة المؤشر الصحي
-            function updateHealthStatus(elementId, value, thresholds) {
-                const statusEl = document.getElementById(elementId);
-                
-                // إزالة جميع الفئات
-                statusEl.classList.remove('status-normal', 'status-warning', 'status-critical');
-                
-                // تحديد الحالة
-                if (value >= thresholds.min && value <= thresholds.max) {
-                    statusEl.classList.add('status-normal');
-                    statusEl.textContent = 'طبيعي';
-                } else if (
-                    (value >= thresholds.min * 0.9 && value < thresholds.min) || 
-                    (value > thresholds.max && value <= thresholds.max * 1.1)
-                ) {
-                    statusEl.classList.add('status-warning');
-                    statusEl.textContent = 'انتباه';
-                } else {
-                    statusEl.classList.add('status-critical');
-                    statusEl.textContent = 'حرج';
-                }
-            }
+    // متغيرات العلامات
+    var currentMarker = null;
+    var currentCircle = L.circle([0,0], {radius: 1}).addTo(map);
 
-            // رسم مخطط القلب (ECG)
-            const canvas = document.getElementById('ecgCanvas');
-            const ctx = canvas.getContext('2d');
-            let width, height;
+    function updateDashboard(data) {
+        if (!data || !data.lat) return;
 
-            function resizeCanvas() {
-                width = canvas.parentElement.clientWidth;
-                height = canvas.parentElement.clientHeight;
-                canvas.width = width;
-                canvas.height = height;
-            }
+        var lat = parseFloat(data.lat);
+        var lng = parseFloat(data.lng);
+        var acc = data.accuracy || 0;
+        var rawType = data.type || "";
+        
+        // 1. تحديد نوع المصدر (Logic)
+        var mode = "unknown";
+        if (rawType.includes("GPS")) mode = "gps";
+        else if (rawType.includes("WiFi")) mode = "wifi";
+        else if (rawType.includes("Tower") || rawType.includes("Cell")) mode = "tower";
 
-            window.addEventListener('resize', resizeCanvas);
-            resizeCanvas();
+        // 2. تحديث ألوان البطاقة والأيقونات
+        var card = document.getElementById('mainCard');
+        var icon = document.getElementById('mainIcon');
+        
+        // حذف الكلاسات القديمة
+        card.className = "card card-custom p-4"; 
+        
+        // تطبيق الستايل الجديد
+        if (mode === "gps") {
+            card.classList.add("status-gps");
+            icon.className = "fas fa-satellite icon-large";
+            document.getElementById('sourceType').innerText = "GPS (أقمار صناعية)";
+        } else if (mode === "wifi") {
+            card.classList.add("status-wifi");
+            icon.className = "fas fa-wifi icon-large";
+            document.getElementById('sourceType').innerText = "WiFi (راوتر منزلي)";
+        } else if (mode === "tower") {
+            card.classList.add("status-tower");
+            icon.className = "fas fa-broadcast-tower icon-large";
+            document.getElementById('sourceType').innerText = "Cell Tower (برج خلوي)";
+        } else {
+            card.classList.add("status-unknown");
+            document.getElementById('sourceType').innerText = rawType;
+        }
 
-            // معلمات رسم ECG
-            let ecgData = [];
-            const ecgBufferSize = 500;
-            let ecgTime = 0;
-            const ecgSpeed = 0.05;
+        // 3. تحديث النصوص
+        document.getElementById('accuracy').innerText = acc;
+        var now = new Date();
+        document.getElementById('lastUpdate').innerText = "آخر تحديث: " + now.toLocaleTimeString();
+        document.getElementById('connectionStatus').innerText = "✅ متصل";
+        document.getElementById('connectionStatus').className = "badge bg-success p-2";
 
-            // توليد بيانات ECG واقعية
-            function generateECGData() {
-                ecgTime += ecgSpeed;
-                
-                // موجة ECG نموذجية
-                let value = 0;
-                
-                // موجة P
-                if (ecgTime % 6 < 0.5) {
-                    value = Math.sin((ecgTime % 0.5) * Math.PI * 4) * 0.3;
-                }
-                // مركب QRS
-                else if (ecgTime % 6 < 0.7) {
-                    value = Math.sin((ecgTime % 0.2) * Math.PI * 10) * 1.5;
-                }
-                // موجة T
-                else if (ecgTime % 6 < 1.0) {
-                    value = Math.sin((ecgTime % 0.3) * Math.PI * 2) * 0.5;
-                }
-                
-                // إضافة ضوضاء واقعية
-                value += (Math.random() - 0.5) * 0.1;
-                
-                return value;
-            }
+        // 4. تحديث أيقونة الخريطة (ديناميكي)
+        var iconHtml = "";
+        var markerClass = "";
+        
+        if(mode === "gps") { iconHtml = '<i class="fas fa-satellite"></i>'; markerClass = "marker-gps"; }
+        else if(mode === "wifi") { iconHtml = '<i class="fas fa-wifi"></i>'; markerClass = "marker-wifi"; }
+        else { iconHtml = '<i class="fas fa-broadcast-tower"></i>'; markerClass = "marker-tower"; }
 
-            // رسم ECG
-            function drawECG() {
-                // تحديث البيانات
-                const newValue = generateECGData();
-                ecgData.push(newValue);
-                
-                if (ecgData.length > ecgBufferSize) {
-                    ecgData.shift();
-                }
-                
-                // مسح الخلفية
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-                ctx.fillRect(0, 0, width, height);
-                
-                // رسم الشبكة
-                ctx.strokeStyle = 'rgba(0, 180, 255, 0.1)';
-                ctx.lineWidth = 1;
-                
-                // خطوط أفقية
-                for (let i = 0; i < height; i += 50) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, i);
-                    ctx.lineTo(width, i);
-                    ctx.stroke();
-                }
-                
-                // خطوط رأسية
-                for (let i = 0; i < width; i += 50) {
-                    ctx.beginPath();
-                    ctx.moveTo(i, 0);
-                    ctx.lineTo(i, height);
-                    ctx.stroke();
-                }
-                
-                // رسم خط الوسط
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(0, height / 2);
-                ctx.lineTo(width, height / 2);
-                ctx.stroke();
-                
-                // رسم موجة ECG
-                ctx.strokeStyle = 'var(--primary-red)';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                
-                const step = width / ecgBufferSize;
-                for (let i = 0; i < ecgData.length; i++) {
-                    const x = i * step;
-                    const y = height / 2 - ecgData[i] * 100;
-                    
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                }
-                
-                ctx.stroke();
-                
-                // تحديث وقت ECG
-                const now = new Date();
-                document.getElementById('ecg-time').textContent = now.toLocaleTimeString('ar-EG');
-                
-                // استدعاء الرسم التالي
-                requestAnimationFrame(drawECG);
-            }
-
-            // بدء التشغيل
-            function init() {
-                // بدء رسم ECG
-                drawECG();
-                
-                // بدء تحديث المستشعرات
-                updateSensors();
-                updateTimestamps();
-                
-                // ضبط الموقتات
-                setInterval(updateSensors, system.updateInterval);
-                setInterval(updateTimestamps, 1000);
-                
-                // تسجيل بدء التشغيل
-                console.log('نظام مراقبة المريض الذكي - تم التهيئة بنجاح');
-            }
-
-            // بدء النظام
-            init();
+        var customIcon = L.divIcon({
+            html: `<div class="map-icon ${markerClass}" style="width: 40px; height: 40px;">${iconHtml}</div>`,
+            className: 'custom-div-icon',
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
+            popupAnchor: [0, -40]
         });
-    </script>
+
+        // تحريك العلامة
+        var newLatLng = new L.LatLng(lat, lng);
+        
+        if (currentMarker) {
+            currentMarker.setLatLng(newLatLng);
+            currentMarker.setIcon(customIcon);
+        } else {
+            currentMarker = L.marker(newLatLng, {icon: customIcon}).addTo(map);
+        }
+
+        currentCircle.setLatLng(newLatLng);
+        currentCircle.setRadius(acc);
+        
+        // تلوين الدائرة حسب الدقة
+        if(mode === "gps") currentCircle.setStyle({color: 'green', fillColor: '#28a745'});
+        else if(mode === "wifi") currentCircle.setStyle({color: 'blue', fillColor: '#17a2b8'});
+        else currentCircle.setStyle({color: 'orange', fillColor: '#ffc107'});
+
+        map.setView(newLatLng);
+        currentMarker.bindPopup(`<b>${document.getElementById('sourceType').innerText}</b><br>الدقة: ${acc} متر`).openPopup();
+        
+        // تحديث زر جوجل
+        document.getElementById('googleLink').href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    }
+
+    function fetchData() {
+        fetch(firebaseURL)
+            .then(response => response.json())
+            .then(data => {
+                updateDashboard(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('connectionStatus').innerText = "❌ انقطع الاتصال";
+                document.getElementById('connectionStatus').className = "badge bg-danger p-2";
+            });
+    }
+
+    // تحديث كل 3 ثواني
+    setInterval(fetchData, 3000);
+    fetchData();
+</script>
+
 </body>
 </html>
